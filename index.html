@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#6baed6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Limpeza 🧹">
+<title>Cronograma de Limpeza 🧹</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --orange: #e8a45a; --orange-l: #fdf0e3; --orange-b: #f5d9b8;
+  --pink: #e07b8a;   --pink-l: #fce8eb;   --pink-b: #f5cdd4;
+  --green: #74b87e;  --green-l: #e6f4e8;  --green-b: #b8e0dc;
+  --purple: #9b8dc8; --purple-l: #ede9f8; --purple-b: #d4cef0;
+  --teal: #5ab8b0;   --teal-l: #e3f7f5;   --teal-b: #b8e0dc;
+  --blue: #6baed6;   --blue-l: #e8f4fc;
+  --text: #2d3748; --text-mid: #4a5568; --text-light: #718096; --text-xlight: #a0aec0;
+  --border: #edf2f7; --row-hover: #f7faff; --bg: #f5f7fa;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html, body { height: 100%; font-family: 'Nunito Sans', sans-serif; background: var(--bg); color: var(--text); }
+
+/* ── LAYOUT ── */
+.app { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+
+.header {
+  background: #fff;
+  padding: 14px 16px 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  flex-shrink: 0;
+  z-index: 10;
+}
+.header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.header-title { font-family: 'Nunito', sans-serif; font-size: 18px; font-weight: 900; color: var(--text); }
+.header-sub { font-size: 11px; color: var(--text-light); margin-top: 1px; }
+
+.global-ring { position: relative; width: 48px; height: 48px; flex-shrink: 0; }
+.global-ring svg { transform: rotate(-90deg); }
+.global-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: var(--text); }
+
+/* ── TABS ── */
+.tabs { display: flex; overflow-x: auto; gap: 2px; padding-bottom: 0; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 12px 10px; border-radius: 10px 10px 0 0;
+  border: none; background: transparent; cursor: pointer;
+  font-family: 'Nunito Sans', sans-serif; font-size: 11px; font-weight: 600;
+  color: var(--text-light); white-space: nowrap; flex-shrink: 0;
+  border-bottom: 3px solid transparent; transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab.active { font-weight: 700; border-bottom-color: currentColor; }
+.tab-emoji { font-size: 16px; line-height: 1; }
+.tab-badge { font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 99px; margin-top: 1px; }
+
+/* ── CONTENT ── */
+.content { flex: 1; overflow-y: auto; padding: 14px 12px calc(14px + var(--safe-bottom)); -webkit-overflow-scrolling: touch; }
+
+/* ── CARDS ── */
+.card {
+  background: #fff; border-radius: 14px; overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 12px;
+}
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px 11px; border-bottom: 1px solid var(--border);
+}
+.card-title { font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 7px; }
+.card-badge { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 99px; }
+
+/* ── TABLE ── */
+.task-table { width: 100%; border-collapse: collapse; }
+.col-task { text-align: left; }
+.th-row { background: #fafbfc; }
+.th-row th { padding: 7px 4px; font-size: 10px; font-weight: 700; color: var(--text-light); text-align: center; border-bottom: 1px solid var(--border); }
+.th-row th.col-task { text-align: left; padding-left: 14px; font-size: 11px; }
+.task-row td { padding: 10px 4px; border-bottom: 1px solid #f0f4f8; text-align: center; vertical-align: middle; }
+.task-row:last-child td { border-bottom: none; }
+.task-row td.col-task { text-align: left; padding-left: 14px; }
+.task-name { font-size: 12px; font-weight: 700; color: var(--text); }
+.task-sub { font-size: 10px; color: var(--text-xlight); margin-top: 1px; }
+.task-emoji { font-size: 14px; margin-right: 5px; }
+
+/* ── CHECKBOX ── */
+.cb-wrap { display: flex; justify-content: center; align-items: center; }
+.cb {
+  width: 22px; height: 22px; border-radius: 5px; border: 2px solid #cbd5e0;
+  background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; flex-shrink: 0; -webkit-tap-highlight-color: transparent;
+  min-width: 22px;
+}
+.cb.checked { border-color: transparent; transform: scale(1.05); }
+.cb svg { display: none; }
+.cb.checked svg { display: block; }
+
+/* ── PROGRESS ── */
+.progress-card { background: #fff; border-radius: 12px; padding: 13px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; }
+.progress-row { display: flex; align-items: center; gap: 10px; }
+.progress-label { font-size: 11px; font-weight: 700; color: var(--text-light); white-space: nowrap; }
+.progress-bar-bg { flex: 1; height: 7px; border-radius: 99px; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+.progress-count { font-size: 11px; font-weight: 800; white-space: nowrap; }
+
+/* ── WEEKLY DAYS ── */
+.days-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.day-card {
+  background: #fff; border-radius: 12px; padding: 12px 13px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1.5px solid var(--pink-b);
+  cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+}
+.day-card.open { border-color: var(--pink); }
+.day-card-header { display: flex; align-items: center; gap: 7px; }
+.day-card-day { font-size: 9px; font-weight: 700; color: var(--text-xlight); text-transform: uppercase; }
+.day-card-theme { font-size: 12px; font-weight: 800; color: var(--pink); line-height: 1.2; }
+.day-card-items { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+.day-card-items li { font-size: 11px; color: var(--text-mid); margin-bottom: 3px; line-height: 1.4; list-style: none; padding-left: 10px; position: relative; }
+.day-card-items li::before { content: "•"; position: absolute; left: 0; color: var(--pink); }
+
+/* ── BIWEEKLY ── */
+.bw-months { display: grid; grid-template-columns: repeat(8, 1fr); }
+.bw-month-head { text-align: center; padding: 5px 2px; }
+.bw-month-name { font-size: 9px; font-weight: 800; color: var(--teal); }
+.bw-month-subs { display: flex; gap: 2px; justify-content: center; margin-top: 2px; }
+.bw-month-subs span { font-size: 8px; color: var(--text-xlight); font-weight: 700; }
+.bw-checks { display: flex; gap: 3px; justify-content: center; }
+
+/* ── TIPS ── */
+.tips-col { display: flex; flex-direction: column; gap: 10px; }
+.tip-section { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.tip-section-header { padding: 13px 16px 11px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; }
+.tip-body { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+.tip-item { background: var(--bg); border-radius: 10px; padding: 11px 13px; }
+.tip-item-title { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.tip-item p { font-size: 11px; color: var(--text-mid); line-height: 1.5; }
+
+/* ── RESET ── */
+.reset-wrap { text-align: center; padding: 8px 0 4px; }
+.reset-btn { background: none; border: 1.5px solid var(--border); border-radius: 20px; padding: 8px 20px; font-size: 11px; font-weight: 700; color: var(--text-xlight); cursor: pointer; font-family: 'Nunito Sans', sans-serif; }
+
+/* scrollable table wrapper */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="header-title">🧹 Cronograma de Limpeza</div>
+        <div class="header-sub">Lar com pets 🐾 · Máx. 1h30/dia</div>
+      </div>
+      <div class="global-ring">
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          <circle cx="24" cy="24" r="20" fill="none" stroke="#edf2f7" stroke-width="4"/>
+          <circle id="ring-fill" cx="24" cy="24" r="20" fill="none" stroke="#6baed6" stroke-width="4"
+            stroke-dasharray="125.66" stroke-dashoffset="125.66" stroke-linecap="round"
+            style="transition: stroke-dashoffset 0.5s ease"/>
+        </svg>
+        <div class="global-pct" id="global-pct">0%</div>
+      </div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="daily" style="color:var(--orange)">
+        <span class="tab-emoji">☀️</span>
+        <span>Diário</span>
+        <span class="tab-badge" id="badge-daily" style="background:var(--orange-l);color:var(--orange)"></span>
+      </button>
+      <button class="tab" data-tab="weekly" style="color:var(--pink)">
+        <span class="tab-emoji">📅</span>
+        <span>Semanal</span>
+        <span class="tab-badge" id="badge-weekly" style="background:var(--pink-l);color:var(--pink)"></span>
+      </button>
+      <button class="tab" data-tab="biweekly" style="color:var(--teal)">
+        <span class="tab-emoji">📆</span>
+        <span>Quinzenal</span>
+        <span class="tab-badge" id="badge-biweekly" style="background:var(--teal-l);color:var(--teal)"></span>
+      </button>
+      <button class="tab" data-tab="monthly" style="color:var(--purple)">
+        <span class="tab-emoji">🗓️</span>
+        <span>Mensal</span>
+        <span class="tab-badge" id="badge-monthly" style="background:var(--purple-l);color:var(--purple)"></span>
+      </button>
+      <button class="tab" data-tab="tips" style="color:var(--teal)">
+        <span class="tab-emoji">💡</span>
+        <span>Dicas</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="content"></div>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const DAYS = ["Seg","Ter","Qua","Qui","Sex","Sáb"];
+const WEEKS = ["Sem 1","Sem 2","Sem 3","Sem 4","Sem 5"];
+const MONTHS_BW = ["Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const MONTHS_MO = ["Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
+const DAILY = [
+  {id:"d1", e:"🐾", l:"Limpeza das patas", s:"Lenço umedecido ao voltar dos passeios"},
+  {id:"d2", e:"💧", l:"Troca de água dos pets", s:"Potes internos e externos"},
+  {id:"d3", e:"🐱", l:"Manutenção da caixa de areia", s:"Recolher resíduos diariamente"},
+  {id:"d4", e:"🌀", l:"Varredura estratégica", s:"Caixa de areia, corredores e onde pets dormem"},
+  {id:"d5", e:"🚿", l:"Pias e bancadas", s:"Pano rápido com desengordurante após refeições"},
+];
+const WEEKLY_DAYS_DATA = [
+  {day:"Segunda", theme:"Aspirar e Limpar o Chão", e:"🌀", items:["Aspirar casa inteira e o sofá","Caprichar nos cantos (pelos!)","Passar pano úmido"]},
+  {day:"Terça", theme:"Tirar o Pó", e:"✨", items:["Pano com lustra móveis ou álcool","Todos os móveis da casa","Superfícies e eletrônicos"]},
+  {day:"Quarta", theme:"Dia dos Pets", e:"🐾", items:["Limpar potes de água e comida","Esvaziar e lavar caixa de areia","Trocar toda a areia"]},
+  {day:"Quinta", theme:"Banheiro", e:"🚿", items:["Lavagem completa do banheiro","Vaso, pia, chão e paredes","Trocar toalhas e tapetes"]},
+  {day:"Sexta", theme:"Chão", e:"🌀", items:["Nova aspiração rápida","Passar pano úmido","Foco nas áreas de circulação"]},
+  {day:"Sábado", theme:"Cozinha + Panos", e:"🍳", items:["Limpar bancadas e fogão","Lavar panos de prato/pia","Lavar panos de chão/pó separado"]},
+];
+const WEEKLY = [
+  {id:"w1", e:"🌀", l:"Aspirar chão e estofados + passar pano úmido"},
+  {id:"w2", e:"✨", l:"Tirar o pó de todos os móveis e eletrônicos"},
+  {id:"w3", e:"🐾", l:"Dia dos pets (potes + caixa de areia)"},
+  {id:"w4", e:"🚿", l:"Limpeza completa do banheiro"},
+  {id:"w5", e:"🍳", l:"Cozinha + lavagem de panos"},
+];
+const BIWEEKLY = [
+  {id:"b1", e:"👕", l:"Dia de Lavanderia", s:"Roupas, roupa de cama, toalhas, tapetes e cama do Fumaça"},
+  {id:"b2", e:"🛁", l:"Toalhas e tapetes do banheiro", s:"Trocar e lavar"},
+  {id:"b3", e:"🚪", l:"Porta da sala e frestas", s:"Limpar por onde entra poeira"},
+  {id:"b4", e:"🪞", l:"Rodapés, vidros, espelhos e lixeiras", s:"Pano úmido + limpar vidros e lixeiras"},
+];
+const MONTHLY = [
+  {id:"m1", e:"🍽️", l:"Eletrodomésticos", s:"Geladeira, micro-ondas e air fryer"},
+  {id:"m2", e:"🫧", l:"Máquina de lavar + Quintal", s:"Ciclo de higienização + lavar o quintal"},
+  {id:"m3", e:"🪟", l:"Tapetes e cortinas", s:"Pelos grudam nos tecidos com o tempo"},
+  {id:"m4", e:"💡", l:"Limpar o teto", s:"Incluindo luminárias e cantos"},
+];
+const TIPS_PETS = [
+  {e:"🪤", t:"Tapete retentor de areia", p:"Coloque um tapete com furos em frente à caixa — retém os grãos das patinhas e reduz drasticamente a areia espalhada."},
+  {e:"🪣", t:"Rodo em estofados", p:"Para tirar pelos do sofá rapidamente, passe um rodo de pia seco ou uma luva de borracha — os pelos formam rolinhos fáceis de retirar."},
+  {e:"🤖", t:"Aspirador robô", p:"Um dos melhores investimentos para quem tem pets. Programado, elimina a necessidade da varredura diária enquanto você trabalha."},
+];
+const TIPS_LAUNDRY = [
+  {e:"🖤", t:"Roupas Pretas", p:"Lave do avesso, separadas de tecidos que soltam fiapos. Use vinagre de álcool no lugar do amaciante — solta pelos e não deixa resíduo. Limpe o filtro antes."},
+  {e:"🤍", t:"Roupas Brancas", p:"Adicione ½ xícara de bicarbonato com o sabão. Para amareladas, molho com alvejante sem cloro (oxigênio). Secar sempre ao sol."},
+  {e:"🌈", t:"Roupas Coloridas", p:"Lave do avesso em água fria. Secar à sombra para manter a vivacidade das cores."},
+  {e:"🔍", t:"Manchas", p:"Gordura: detergente neutro diretamente. Comida/suor: pasta de alvejante sem cloro por 15 min antes de lavar."},
+  {e:"🧼", t:"Sabão em Pó + Toalhas", p:"Dilua em água morna antes do dispenser ou adicione enxágue extra para evitar resíduo que endurece as toalhas."},
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const KEY = "limpeza_v2";
+let checks = {};
+try { checks = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch {}
+
+let currentTab = "daily";
+let openDay = null;
+
+function save() { try { localStorage.setItem(KEY, JSON.stringify(checks)); } catch {} }
+
+function toggle(key) {
+  checks[key] = !checks[key];
+  save();
+  render();
+}
+
+// ─── COUNTS ──────────────────────────────────────────────────────────────────
+function count() {
+  let dD=0, dT=DAILY.length*6;
+  DAILY.forEach(t => DAYS.forEach((_,i) => { if(checks[`${t.id}_d${i}`]) dD++; }));
+
+  let wD=0, wT=WEEKLY.length*5;
+  WEEKLY.forEach(t => WEEKS.forEach((_,i) => { if(checks[`${t.id}_w${i}`]) wD++; }));
+
+  let bD=0, bT=BIWEEKLY.length*MONTHS_BW.length*2;
+  BIWEEKLY.forEach(t => MONTHS_BW.forEach((_,mi) => {
+    if(checks[`${t.id}_m${mi}_1`]) bD++;
+    if(checks[`${t.id}_m${mi}_2`]) bD++;
+  }));
+
+  let mD=0, mT=MONTHLY.length*MONTHS_MO.length;
+  MONTHLY.forEach(t => MONTHS_MO.forEach((_,mi) => { if(checks[`${t.id}_mo${mi}`]) mD++; }));
+
+  return {dD,dT,wD,wT,bD,bT,mD,mT,
+    total: dD+wD+bD+mD, totalT: dT+wT+bT+mT};
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function cb(key, color, size=22) {
+  const c = checks[key];
+  return `<div class="cb-wrap"><button class="cb${c?' checked':''}" style="${c?`background:${color};box-shadow:0 0 0 3px ${color}33`:''}" onclick="toggle('${key}')">
+    <svg width="${size*0.55}" height="${size*0.55}" viewBox="0 0 10 10" fill="none">
+      <polyline points="1.5,5 4,7.5 8.5,2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button></div>`;
+}
+
+function progressBar(done, total, color, bg) {
+  const pct = total > 0 ? Math.round(done/total*100) : 0;
+  return `<div class="progress-card" style="border:1.5px solid ${bg.replace('l)','b)')}">
+    <div class="progress-row">
+      <span class="progress-label">Progresso</span>
+      <div class="progress-bar-bg" style="background:${bg}">
+        <div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div>
+      </div>
+      <span class="progress-count" style="color:${color}">${done}/${total}</span>
+    </div>
+  </div>`;
+}
+
+// ─── RENDER TABS ─────────────────────────────────────────────────────────────
+function renderDaily() {
+  const c = count();
+  let rows = DAILY.map(t => {
+    const done = DAYS.filter((_,i) => checks[`${t.id}_d${i}`]).length;
+    return `<tr class="task-row" style="background:${done===6?'#fffaf0':'#fff'}">
+      <td class="col-task">
+        <span class="task-emoji">${t.e}</span>
+        <span class="task-name">${t.l}</span>
+        <div class="task-sub">${t.s}</div>
+      </td>
+      ${DAYS.map((_,i) => `<td>${cb(`${t.id}_d${i}`,'var(--orange)')}</td>`).join('')}
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="card" style="border:1.5px solid var(--orange-b)">
+      <div class="card-header">
+        <div class="card-title" style="color:var(--orange)">☀️ Rotina Diária</div>
+        <span class="card-badge" style="background:var(--blue-l);color:var(--blue)">20–30 min</span>
+      </div>
+      <div class="table-scroll">
+        <table class="task-table" style="min-width:380px">
+          <thead><tr class="th-row">
+            <th class="col-task">Tarefa</th>
+            ${DAYS.map(d=>`<th>${d}</th>`).join('')}
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+    ${progressBar(c.dD, c.dT, 'var(--orange)', 'var(--orange-l)')}
+    <div class="reset-wrap"><button class="reset-btn" onclick="resetAll()">🔄 Zerar tudo</button></div>
+  `;
+}
+
+function renderWeekly() {
+  const c = count();
+  const dayCards = WEEKLY_DAYS_DATA.map((d,i) => `
+    <div class="day-card${openDay===i?' open':''}" onclick="toggleDay(${i})">
+      <div class="day-card-header">
+        <span style="font-size:18px">${d.e}</span>
+        <div>
+          <div class="day-card-day">${d.day}</div>
+          <div class="day-card-theme">${d.theme}</div>
+        </div>
+      </div>
+      ${openDay===i ? `<ul class="day-card-items">${d.items.map(item=>`<li>${item}</li>`).join('')}</ul>` : ''}
+    </div>
+  `).join('');
+
+  let rows = WEEKLY.map(t => `
+    <tr class="task-row">
+      <td class="col-task">
+        <span class="task-emoji">${t.e}</span>
+        <span class="task-name">${t.l}</span>
+      </td>
+      ${WEEKS.map((_,i) => `<td>${cb(`${t.id}_w${i}`,'var(--pink)')}</td>`).join('')}
+    </tr>
+  `).join('');
+
+  return `
+    <div class="days-grid">${dayCards}</div>
+    <div class="card" style="border:1.5px solid var(--pink-b)">
+      <div class="card-header">
+        <div class="card-title" style="color:var(--pink)">📅 Registro Semanal</div>
+        <span class="card-badge" style="background:var(--purple-l);color:var(--purple)">Sem 1 a 5</span>
+      </div>
+      <div class="table-scroll">
+        <table class="task-table" style="min-width:340px">
+          <thead><tr class="th-row">
+            <th class="col-task">Tarefa</th>
+            ${WEEKS.map(w=>`<th style="font-size:9px">${w}</th>`).join('')}
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+    ${progressBar(c.wD, c.wT, 'var(--pink)', 'var(--pink-l)')}
+  `;
+}
+
+function renderBiweekly() {
+  const c = count();
+  const monthHeads = MONTHS_BW.map(m => `
+    <th style="text-align:center;padding:6px 2px;border-bottom:1px solid var(--border)">
+      <div style="font-size:9px;font-weight:800;color:var(--teal)">${m}</div>
+      <div style="display:flex;gap:2px;justify-content:center;margin-top:2px">
+        <span style="font-size:7px;color:var(--text-xlight);font-weight:700">1ª</span>
+        <span style="font-size:7px;color:var(--text-xlight);font-weight:700">2ª</span>
+      </div>
+    </th>
+  `).join('');
+
+  let rows = BIWEEKLY.map(t => `
+    <tr class="task-row">
+      <td class="col-task" style="padding-left:14px;min-width:120px">
+        <span class="task-emoji">${t.e}</span>
+        <span class="task-name">${t.l}</span>
+        <div class="task-sub">${t.s}</div>
+      </td>
+      ${MONTHS_BW.map((_,mi) => `
+        <td style="padding:4px 2px">
+          <div style="display:flex;gap:3px;justify-content:center">
+            ${cb(`${t.id}_m${mi}_1`,'var(--green)',18)}
+            ${cb(`${t.id}_m${mi}_2`,'var(--green)',18)}
+          </div>
+        </td>
+      `).join('')}
+    </tr>
+  `).join('');
+
+  return `
+    <div class="card" style="border:1.5px solid var(--green-b)">
+      <div class="card-header">
+        <div class="card-title" style="color:var(--teal)">📆 Tarefas Quinzenais</div>
+        <span class="card-badge" style="background:var(--green-l);color:var(--green)">A cada 15 dias</span>
+      </div>
+      <div class="table-scroll">
+        <table class="task-table" style="min-width:480px">
+          <thead><tr class="th-row">
+            <th class="col-task" style="min-width:120px">Tarefa</th>
+            ${monthHeads}
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+    ${progressBar(c.bD, c.bT, 'var(--green)', 'var(--green-l)')}
+  `;
+}
+
+function renderMonthly() {
+  const c = count();
+  let rows = MONTHLY.map(t => `
+    <tr class="task-row">
+      <td class="col-task">
+        <span class="task-emoji">${t.e}</span>
+        <span class="task-name">${t.l}</span>
+        <div class="task-sub">${t.s}</div>
+      </td>
+      ${MONTHS_MO.map((_,mi) => `<td>${cb(`${t.id}_mo${mi}`,'var(--purple)')}</td>`).join('')}
+    </tr>
+  `).join('');
+
+  return `
+    <div class="card" style="border:1.5px solid var(--purple-b)">
+      <div class="card-header">
+        <div class="card-title" style="color:var(--purple)">🗓️ Tarefas Mensais</div>
+        <span class="card-badge" style="background:var(--orange-l);color:var(--orange)">1x por mês</span>
+      </div>
+      <div class="table-scroll">
+        <table class="task-table" style="min-width:420px">
+          <thead><tr class="th-row">
+            <th class="col-task">Tarefa</th>
+            ${MONTHS_MO.map(m=>`<th>${m}</th>`).join('')}
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+    ${progressBar(c.mD, c.mT, 'var(--purple)', 'var(--purple-l)')}
+  `;
+}
+
+function renderTips() {
+  const pets = TIPS_PETS.map(t => `
+    <div class="tip-item">
+      <div class="tip-item-title"><span>${t.e}</span>${t.t}</div>
+      <p>${t.p}</p>
+    </div>`).join('');
+
+  const laundry = TIPS_LAUNDRY.map(t => `
+    <div class="tip-item" style="background:var(--blue-l)">
+      <div class="tip-item-title"><span>${t.e}</span>${t.t}</div>
+      <p>${t.p}</p>
+    </div>`).join('');
+
+  return `
+    <div class="tips-col">
+      <div class="tip-section" style="border:1.5px solid #b8dfc0">
+        <div class="tip-section-header" style="color:var(--green)">🐾 Dicas para Pets</div>
+        <div class="tip-body" style="background:var(--green-l)">${pets}</div>
+      </div>
+      <div class="tip-section" style="border:1.5px solid #b8d4f5">
+        <div class="tip-section-header" style="color:var(--blue)">👕 Dicas de Lavanderia</div>
+        <div class="tip-body" style="background:var(--blue-l)">${laundry}</div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function render() {
+  // Update global ring
+  const c = count();
+  const pct = c.totalT > 0 ? Math.round(c.total/c.totalT*100) : 0;
+  const circ = 2 * Math.PI * 20;
+  document.getElementById('ring-fill').style.strokeDashoffset = circ * (1 - pct/100);
+  document.getElementById('global-pct').textContent = pct + '%';
+
+  // Update badges
+  document.getElementById('badge-daily').textContent = `${c.dD}/${c.dT}`;
+  document.getElementById('badge-weekly').textContent = `${c.wD}/${c.wT}`;
+  document.getElementById('badge-biweekly').textContent = `${c.bD}/${c.bT}`;
+  document.getElementById('badge-monthly').textContent = `${c.mD}/${c.mT}`;
+
+  // Render content
+  const map = { daily: renderDaily, weekly: renderWeekly, biweekly: renderBiweekly, monthly: renderMonthly, tips: renderTips };
+  document.getElementById('content').innerHTML = map[currentTab]();
+}
+
+function toggleDay(i) {
+  openDay = openDay === i ? null : i;
+  render();
+}
+
+function resetAll() {
+  if (!confirm('Zerar todos os checks?')) return;
+  checks = {};
+  save();
+  render();
+}
+
+// ─── TABS ────────────────────────────────────────────────────────────────────
+document.getElementById('tabs').addEventListener('click', e => {
+  const btn = e.target.closest('[data-tab]');
+  if (!btn) return;
+  currentTab = btn.dataset.tab;
+  openDay = null;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('content').scrollTop = 0;
+  render();
+});
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
